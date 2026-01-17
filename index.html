@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="ro">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profesor Virtual UOC - Universitatea Ovidius Constanța</title>
+    <meta name="description"
+        content="Agent AI portabil pentru profesorii și studenții Universității Ovidius din Constanța.">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Marked.js for Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            /* More vibrant Royal Blue */
+            --primary-light: #60a5fa;
+            --secondary: #10b981;
+            /* Emerand Green */
+            --bg-dark: #020617;
+            /* Deeper Dark Blue-Black */
+            --bg-sidebar: #0f172a;
+            /* Solid Sidebar for contrast */
+            --bg-card: rgba(30, 41, 59, 0.9);
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+            /* Lighter muted text for readability */
+            --border-color: rgba(148, 163, 184, 0.2);
+            --gradient: linear-gradient(135deg, #2563eb 0%, #10b981 100%);
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --user-msg: #1e293b;
+            --ai-msg: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+            background-image:
+                radial-gradient(circle at 0% 0%, rgba(0, 86, 179, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(32, 201, 151, 0.15) 0%, transparent 40%);
+        }
+
+        /* Sidebar Styles */
+        aside {
+            width: 380px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            z-index: 10;
+            overflow-y: auto;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 3rem;
+        }
+
+        .logo-icon {
+            width: 45px;
+            height: 45px;
+            background: var(--gradient);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 16px rgba(0, 86, 179, 0.3);
+        }
+
+        .logo-text h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-text span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .settings-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .settings-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+        }
+
+        select,
+        input,
+        textarea {
+            width: 100%;
+            background: #1e293b;
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 0.85rem;
+            color: #ffffff;
+            font-size: 0.95rem;
+            font-weight: 400;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        select:focus,
+        input:focus,
+        textarea:focus {
+            border-color: var(--primary-light);
+            background: #2d3e50;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+
+        select option {
+            background: #0f172a;
+            color: white;
+            padding: 10px;
+        }
+
+        .btn {
+            background: var(--gradient);
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 86, 179, 0.4);
+        }
+
+        /* Main Chat Area */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        #chat-container {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 1.2rem;
+            border-radius: 16px;
+            line-height: 1.6;
+            animation: fadeIn 0.4s ease forwards;
+            position: relative;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: var(--primary);
+            color: white;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
+        .message.ai {
+            align-self: flex-start;
+            background: var(--ai-msg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .message.system {
+            align-self: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .input-area {
+            padding: 2rem;
+            background: linear-gradient(rgba(15, 23, 42, 0), rgba(15, 23, 42, 1));
+        }
+
+        .input-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: flex-end;
+            padding: 0.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        #user-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 0.75rem 1rem;
+            max-height: 200px;
+            resize: none;
+            overflow-y: auto;
+        }
+
+        #send-btn {
+            width: 45px;
+            height: 45px;
+            min-width: 45px;
+            margin: 0.25rem;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--glass-border);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Markdown Styles */
+        .message pre {
+            background: #1e293b;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 10px;
+            overflow-x: auto;
+        }
+
+        .message code {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+        }
+
+        .message p {
+            margin-bottom: 10px;
+        }
+
+        .message ul,
+        .message ol {
+            margin-left: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            margin-top: auto;
+            color: var(--text-muted);
+            padding: 0.5rem;
+            border-radius: 6px;
+            background: var(--glass);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+        }
+
+        .status-dot.online {
+            background: #22c55e;
+        }
+    </style>
+</head>
+
+<body>
+
+    <aside>
+        <div class="logo-container">
+            <div class="logo-icon">
+                <i data-lucide="graduation-cap" color="white" size="24"></i>
+            </div>
+            <div class="logo-text">
+                <h1>Profesor Virtual</h1>
+                <span>Ovidius Constanța</span>
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <label for="model-search">Căutare Model Ollama</label>
+            <div style="position: relative; margin-bottom: 8px;">
+                <input type="text" id="model-search" placeholder="Caută model (ex: llama)..."
+                    style="padding-left: 35px;">
+                <i data-lucide="search" size="16"
+                    style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <select id="model-select">
+                    <option value="">Se încarcă modelele...</option>
+                </select>
+                <button id="refresh-models" title="Refresh Models"
+                    style="width: 40px; border-radius: 8px; background: var(--glass); border: 1px solid var(--glass-border); cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; transition: all 0.3s;">
+                    <i data-lucide="refresh-cw" size="16"></i>
+                </button>
+            </div>
+            <div id="model-info" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; display: none;">
+                Mărime: <span id="model-size">-</span> | Modificat: <span id="model-date">-</span>
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <label for="faculty-select">Facultate</label>
+            <select id="faculty-select">
+                <option value="Arte">Arte</option>
+                <option value="Construcții">Construcții</option>
+                <option value="Drept și Științe Administrative">Drept și Științe Administrative</option>
+                <option value="Educație Fizică și Sport">Educație Fizică și Sport</option>
+                <option value="Farmacie">Farmacie</option>
+                <option value="Inginerie Mecanică, Industrială și Maritimă">Inginerie Mecanică, Industrială și Maritimă
+                </option>
+                <option value="Istorie și Științe Politice">Istorie și Științe Politice</option>
+                <option value="Litere">Litere</option>
+                <option value="Matematică și Informatică">Matematică și Informatică</option>
+                <option value="Medicină">Medicină</option>
+                <option value="Psihologie și Științele Educației">Psihologie și Științele Educației</option>
+                <option value="Stomatologie">Stomatologie</option>
+                <option value="Științe Aplicate și Inginerie">Științe Aplicate și Inginerie</option>
+                <option value="Științe ale Naturii și Științe Agricole">Științe ale Naturii și Științe Agricole</option>
+                <option value="Științe Economice">Științe Economice</option>
+                <option value="Teologie">Teologie</option>
+            </select>
+        </div>
+
+        <div class="settings-group">
+            <label for="specialization">Specializare / Materie</label>
+            <input type="text" id="specialization" placeholder="ex: Programare Web, Drept Civil..." value="General">
+        </div>
+
+        <div class="settings-group">
+            <label for="prof-name">Nume Profesor</label>
+            <input type="text" id="prof-name" placeholder="ex: Conf. Dr. Dan Popescu" value="Prof. Dr. Universitar">
+        </div>
+
+        <div class="settings-group">
+            <label for="system-prompt">Prompt Sistem (Personalizat)</label>
+            <textarea id="system-prompt" rows="6" style="font-size: 0.8rem;">Ești un profesor universitar la Universitatea Ovidius din Constanța. 
+Abordarea ta este riguroasă academic, dar empatică. Folosești "domnule/doamnă student" când te adresezi interlocutorului. 
+Sarcina ta este să predai, să explici concepte complexe și să îndrumi studenții în proiectele lor.</textarea>
+        </div>
+
+        <button class="btn" id="save-settings">
+            <i data-lucide="save" size="18"></i>
+            Salvare Profil
+        </button>
+
+        <div class="status-badge">
+            <div id="status-dot" class="status-dot"></div>
+            <span id="status-text">Ollama deconectat</span>
+        </div>
+    </aside>
+
+    <main>
+        <div id="chat-container">
+            <div class="message ai">
+                Bună ziua! Sunt asistentul tău universitar virtual de la Universitatea Ovidius. Cu ce te pot ajuta
+                astăzi în legătură cu studiile sau proiectele tale?
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-wrapper">
+                <textarea id="user-input" placeholder="Întreabă profesorul despre materie, proiecte sau examene..."
+                    rows="1"></textarea>
+                <button class="btn" id="send-btn">
+                    <i data-lucide="send" size="20"></i>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const modelSelect = document.getElementById('model-select');
+        const modelSearch = document.getElementById('model-search');
+        const modelInfo = document.getElementById('model-info');
+        const modelSizeDisp = document.getElementById('model-size');
+        const modelDateDisp = document.getElementById('model-date');
+        const facultySelect = document.getElementById('faculty-select');
+        const specializationInput = document.getElementById('specialization');
+        const profName = document.getElementById('prof-name');
+        const systemPromptInput = document.getElementById('system-prompt');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const refreshModelsBtn = document.getElementById('refresh-models');
+        const saveSettingsBtn = document.getElementById('save-settings');
+
+        let chatHistory = [];
+        let allModels = [];
+
+        // Persistence
+        function saveSettings() {
+            const settings = {
+                model: modelSelect.value,
+                faculty: facultySelect.value,
+                specialization: specializationInput.value,
+                profName: profName.value,
+                systemPrompt: systemPromptInput.value
+            };
+            localStorage.setItem('uoc_agent_settings', JSON.stringify(settings));
+            appendMessage('system', 'Setările au fost salvate local.');
+        }
+
+        function loadSettings() {
+            const saved = localStorage.getItem('uoc_agent_settings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                if (settings.faculty) facultySelect.value = settings.faculty;
+                if (settings.specialization) specializationInput.value = settings.specialization;
+                if (settings.profName) profName.value = settings.profName;
+                if (settings.systemPrompt) systemPromptInput.value = settings.systemPrompt;
+                return settings.model;
+            }
+            return null;
+        }
+
+        saveSettingsBtn.addEventListener('click', saveSettings);
+
+        // Auto-resize textarea
+        userInput.addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        // Initialize marked.js
+        marked.setOptions({
+            breaks: true,
+            gfm: true
+        });
+
+        // Check Ollama Status & Fetch Models
+        async function fetchModels() {
+            refreshModelsBtn.style.transform = 'rotate(360deg)';
+            try {
+                const response = await fetch('http://localhost:11434/api/tags');
+                if (response.ok) {
+                    const data = await response.json();
+                    allModels = data.models || [];
+                    renderModels(allModels);
+
+                    const savedModel = loadSettings();
+                    if (savedModel && allModels.some(m => m.name === savedModel)) {
+                        modelSelect.value = savedModel;
+                        updateModelDetails();
+                    }
+
+                    statusDot.className = 'status-dot online';
+                    statusText.textContent = `Ollama conectat (${allModels.length} modele)`;
+                } else {
+                    throw new Error();
+                }
+            } catch (err) {
+                statusDot.className = 'status-dot';
+                statusText.textContent = 'Ollama nu a fost găsit (localhost:11434)';
+                modelSelect.innerHTML = '<option value="">Eroare conexiune</option>';
+            } finally {
+                setTimeout(() => refreshModelsBtn.style.transform = 'rotate(0deg)', 500);
+            }
+        }
+
+        function renderModels(modelsList) {
+            modelSelect.innerHTML = '';
+            if (modelsList.length === 0) {
+                modelSelect.innerHTML = '<option value="">Niciun model găsit</option>';
+                return;
+            }
+
+            modelsList.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.name;
+                const sizeGB = (model.size / (1024 * 1024 * 1024)).toFixed(2);
+                option.textContent = `${model.name} (${sizeGB} GB)`;
+                modelSelect.appendChild(option);
+            });
+            updateModelDetails();
+        }
+
+        function updateModelDetails() {
+            const selected = allModels.find(m => m.name === modelSelect.value);
+            if (selected) {
+                modelInfo.style.display = 'block';
+                modelSizeDisp.textContent = (selected.size / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+                const date = new Date(selected.modified_at);
+                modelDateDisp.textContent = date.toLocaleDateString();
+            } else {
+                modelInfo.style.display = 'none';
+            }
+        }
+
+        modelSearch.addEventListener('input', () => {
+            const term = modelSearch.value.toLowerCase();
+            const filtered = allModels.filter(m => m.name.toLowerCase().includes(term));
+            renderModels(filtered);
+        });
+
+        modelSelect.addEventListener('change', updateModelDetails);
+        refreshModelsBtn.addEventListener('click', fetchModels);
+        fetchModels();
+
+        function appendMessage(role, content) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${role}`;
+
+            if (role === 'ai') {
+                msgDiv.innerHTML = marked.parse(content);
+            } else {
+                msgDiv.textContent = content;
+            }
+
+            chatContainer.appendChild(msgDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            lucide.createIcons();
+
+            if (role !== 'system') {
+                chatHistory.push({ role, content });
+            }
+        }
+
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            appendMessage('user', text);
+            userInput.value = '';
+            userInput.style.height = 'auto';
+
+            // Loading indicator
+            const loadingMsg = document.createElement('div');
+            loadingMsg.className = 'message ai system';
+            loadingMsg.textContent = 'Profesorul se gândește...';
+            chatContainer.appendChild(loadingMsg);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            const fullSystemPrompt = `${systemPromptInput.value}\nNumele meu este ${profName.value}. Sunt la Facultatea de ${facultySelect.value}, specializarea ${specializationInput.value}.`;
+
+            try {
+                const response = await fetch('http://localhost:11434/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: modelSelect.value,
+                        messages: [
+                            { role: 'system', content: fullSystemPrompt },
+                            ...chatHistory
+                        ],
+                        stream: false
+                    })
+                });
+
+                chatContainer.removeChild(loadingMsg);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    appendMessage('ai', data.message.content);
+                } else {
+                    appendMessage('system', 'Eroare: Nu s-a putut contacta Ollama.');
+                }
+            } catch (err) {
+                chatContainer.removeChild(loadingMsg);
+                appendMessage('system', 'Eroare: Asigură-te că Ollama rulează local (localhost:11434).');
+                console.error(err);
+            }
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+
+        // Dynamic System Prompt Update
+        function updateSystemPrompt() {
+            const faculty = facultySelect.value;
+            const spec = specializationInput.value;
+            let themePrompt = `Ești un profesor universitar la Universitatea Ovidius din Constanța, Facultatea de ${faculty}.\n`;
+
+            const facultyPrompts = {
+                'Arte': 'Ești un artist și mentor creativ. Încurajezi exprimarea liberă și stăpânirea tehnicilor plastice, muzicale sau de scenă.',
+                'Construcții': 'Ești un inginer constructor riguros. Pui accent pe siguranța structurilor, materiale durabile și proiectare tehnică precisă.',
+                'Drept și Științe Administrative': 'Ești un expert în legislație. Folosești un limbaj juridic precis și analizezi cazurile conform normelor în vigoare.',
+                'Educație Fizică și Sport': 'Ești antrenor și pedagog al mișcării. Accentuezi importanța sănătății, performanței și metodologiei sportive.',
+                'Farmacie': 'Ești specialist în științe farmaceutice. Accentuezi precizia chimică, interacțiunile medicamentoase și etica farmaceutică.',
+                'Inginerie Mecanică, Industrială și Maritimă': 'Ești inginer cu viziune tehnică. Te axezi pe sistemele mecanice, navale și eficiență industrială.',
+                'Istorie și Științe Politice': 'Analizezi contextul istoric și politic cu echilibru. Menționezi des moștenirea cetății Tomis și contextul Dobrogei.',
+                'Litere': 'Ești filolog și cercetător al limbii. Ești atent la nuanțele lingvistice, literatură și jurnalism de calitate.',
+                'Matematică și Informatică': 'Ești expert în logică și algoritmi. Explici codul și conceptele matematice cu claritate și rigurozitate.',
+                'Medicină': 'Ești medic și pedagog. Pui accent pe anatomie, diagnostic corect și responsabilitatea față de viața umană.',
+                'Psihologie și Științele Educației': 'Ești empatic și analitic. Te axezi pe mecanismele minții, dezvoltarea umană și pedagogia modernă.',
+                'Stomatologie': 'Ești specialist în sănătate orală. Accentuezi precizia tehnică în tratamente și îngrijirea pacientului.',
+                'Științe Aplicate și Inginerie': 'Ești orientat spre cercetare aplicată în chimie și fizică, legând teoria de aplicațiile industriale.',
+                'Științe ale Naturii și Științe Agricole': 'Ești cercetător al naturii. Te axezi pe biologie, ecologie, geografie și tehnologii agricole moderne.',
+                'Științe Economice': 'Ești expert în mecanismele pieței. Accentuezi managementul, finanțele și strategiile de afaceri.',
+                'Teologie': 'Ești erudit în teologie și spiritualitate. Oferi îndrumare bazată pe canoane și istoria bisericii, cu calm și profunzime.'
+            };
+
+            themePrompt += (facultyPrompts[faculty] || "");
+            systemPromptInput.value = themePrompt + `\nAbordarea ta este riguroasă academic. Folosești 'domnule/doamnă student'.`;
+        }
+
+        facultySelect.addEventListener('change', updateSystemPrompt);
+        specializationInput.addEventListener('input', updateSystemPrompt);
+    </script>
+</body>
+
+</html>
